@@ -51,7 +51,7 @@ public:
 	{
 	}
 	
-	PixelCoords Real2Pixel(const RealCoords& coords) 
+	PixelCoords Real2Pixel(const RealCoords& coords) const
 	{
 		assert(fabsf(coords.x) <= rangeX);
 		assert(fabsf(coords.y) <= rangeY);
@@ -62,7 +62,7 @@ public:
 		return {std::lround(px), std::lround(py)};	
 	}
 	
-	RealCoords Pixel2Real(const PixelCoords& coords) 
+	RealCoords Pixel2Real(const PixelCoords& coords) const
 	{
 		assert(coords.x < width);
 		assert(coords.y < height);
@@ -83,7 +83,7 @@ private:
 public:
 	FBWriter(const Resolution& res) :
 		resolution(res),
-		buffer(res.h * res.w, {0xff})
+		buffer(res.h * res.w)
 	{
 	}
 	
@@ -112,8 +112,8 @@ public:
 	
 	RGBAColor& operator[](const PixelCoords& coords) 
 	{
-		assert(coords.x <= resolution.w);
-		assert(coords.y <= resolution.h);
+		assert(coords.x < resolution.w);
+		assert(coords.y < resolution.h);
 		
 		return buffer[coords.y * resolution.w + coords.x];
 	}
@@ -124,6 +124,46 @@ public:
 	}
 };
 
+struct Line 
+{
+	RealCoords p1, p2;
+};
+
+void Draw(	FBWriter& fb, const CoordsCounter& cc, 
+			const Line& line, const RGBAColor& color)
+{	
+	PixelCoords p1 = cc.Real2Pixel(line.p1);
+	PixelCoords p2 = cc.Real2Pixel(line.p2);
+	
+	uint16_t xmin = std::min(p1.x, p2.x);
+	uint16_t xmax = std::max(p1.x, p2.x);
+	 
+	uint16_t ymin = std::min(p1.y, p2.y);
+	uint16_t ymax = std::max(p1.y, p2.y);
+	
+	std::cout << xmin << " -> " << xmax << std::endl;
+	std::cout << ymin << " -> " << ymax << std::endl;
+	
+	if (xmax - xmin > ymax - ymin) {
+		for (uint16_t x = xmin; x <= xmax; ++x) {
+			 uint16_t y = uint16_t(std::lround(
+							ymin + float(ymax - ymin) / 
+							float(xmax - xmin) * (x - xmin)
+							));
+			fb[{x, y}] = color;
+		}
+	}
+	else {
+		for (uint16_t y = ymin; y <= ymax; ++y) {
+			uint16_t x = uint16_t(std::lround(
+							xmin + float(xmax - xmin) / 
+							float(ymax - ymin) * (y - ymin)
+							));
+			fb[{x, y}] = color;
+		}
+	}
+}
+
 
 
 const uint32_t height 	= 1080;
@@ -131,23 +171,8 @@ const uint32_t width	= 1920;
 
 int main() {
 	CoordsCounter cc({width, height});
-	
-	while (1) {
-		uint16_t a, b;
-		std::cin >> a >> b;
-		RealCoords rc = cc.Pixel2Real({a, b});
-		std::cout << rc.x << " " << rc.y << std::endl;
-	}
-	
-	while (1) {
-		float a, b;
-		std::cin >> a >> b;
-		PixelCoords pc = cc.Real2Pixel({a, b});
-		std::cout << pc.x << " " << pc.y << std::endl;
-	}
-	
-	
 	FBWriter fb({width, height});
+	
 	fb.open("/dev/fb0");
 	
 	if (!fb.is_open()) {
@@ -155,45 +180,12 @@ int main() {
 		return 1;
 	}
 	
-	/*
+	Line line = {{0.9, 0.9}, {-0.9, -0.9}};
+	Draw(fb, cc, line, {0, 0xff, 0, 0xff});
 	
-	for (int32_t x = 0; x < width; ++x)
-			for (int32_t y = 0; y < height; y++)
-				fb.setPixel({x, y}, {0xff, 0xff, 0xff, 0xff});
-				
 	fb.flush();
 	
-	CoordsCounter cc(res);
-	
-	Coords p1 = {-0.7, -0.5};
-	Coords p2 = {0.7, 0.5};
-	
-	PixelCoords p1p = cc.convert_c2p(p1);
-	PixelCoords p2p = cc.convert_c2p(p2);
-	
-	int32_t xmin = std::min(p1p.x, p2p.x);
-	int32_t xmax = std::max(p1p.x, p2p.x);
-	 
-	int32_t ymin = std::min(p1p.y, p2p.y);
-	int32_t ymax = std::max(p1p.y, p2p.y);
-	
-	std::cout << xmin << " -> " << xmax << std::endl;
-	std::cout << ymin << " -> " << ymax << std::endl;
-	
-	if (xmax - xmin > ymax - ymin) {
-		for (uint32_t x = xmin; x <= xmax; ++x) {
-			uint32_t y = std::lround(
-							ymin + double(ymax - ymin) / 
-							double(xmax - xmin) * (x - xmin)
-							);
-			fb.setPixel({x, y}, {0, 0, 0, 0xff});
-		}
-	}
-	else {
-		
-	}
-	*/
-	
+	/*
 	while (1) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		for (int x = 0; x < width; ++x)
@@ -209,4 +201,5 @@ int main() {
 				
 		fb.flush();
 	}
+	*/
 }
