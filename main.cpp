@@ -6,6 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <cmath>
+#include <cassert>
 
 struct RGBAColor
 {
@@ -14,17 +15,17 @@ struct RGBAColor
 
 struct Resolution
 {
-	uint32_t w, h;
+	uint16_t w, h;
 };
 
 struct PixelCoords
 {
-	int32_t x, y;
+	uint16_t x, y;
 };
 
-struct Coords
+struct RealCoords
 {
-	double x, y;
+	float x, y;
 };
 
 class CoordsCounter
@@ -43,14 +44,14 @@ public:
 		resolution(resolution) {
 	}
 	
-	PixelCoords convert_c2p(const Coords& coords) {
+	PixelCoords convert_c2p(const RealCoords& coords) {
 		return { std::lround(-0.5 + resolution.w / 2.0 * 
 												(coords.x + 1.0)),
 				 std::lround(-0.5 + resolution.h / 2.0 * 
 												(coords.y + 1.0)) };	
 	}
 	
-	Coords convert_p2c(const PixelCoords& coords) {
+	RealCoords convert_p2c(const PixelCoords& coords) {
 		return { -1.0 + (2.0 * coords.x + 1.0) / resolution.w,
 				 -1.0 + (2.0 * coords.y + 1.0) / resolution.h };
 	}
@@ -59,31 +60,50 @@ public:
 class FBWriter
 {
 private:
-	const Resolution resolution;
-	std::vector<RGBAColor> buffer;
-	std::ofstream stream;
+	const Resolution 		resolution;
+	std::vector<RGBAColor> 	buffer;
+	std::filebuf 			filebuf;
 public:
 	FBWriter(const Resolution& res) :
 		resolution(res),
-		buffer(res.h * res.w, {0xff}),
-		stream("/dev/fb0", std::ofstream::binary) {
+		buffer(res.h * res.w, {0xff})
+	{
 	}
 	
-	void flush() {
-		size_t size = buffer.size() * sizeof(RGBAColor);
-		const char* data = reinterpret_cast<const char*>(buffer.data());
+	bool is_open() 
+	{
+		return filebuf.is_open();
+	}
+	
+	void open(const char* filename) 
+	{
+		assert(filename != NULL);
 		
-		stream.write(data, size);
-		stream.flush();
-		stream.seekp(0);
+		filebuf.open(filename, std::ios::out | std::ios::binary);
 	}
 	
-	RGBAColor& operator[](const PixelCoords& coords) {
+	void flush() 
+	{
+		assert(is_open());
+		
+		size_t buffersize = buffer.size() * sizeof(RGBAColor);
+		char* bufferp = reinterpret_cast<char*>(buffer.data());
+		
+		filebuf.sputn(bufferp, buffersize);
+		filebuf.pubseekpos(0);
+	}
+	
+	RGBAColor& operator[](const PixelCoords& coords) 
+	{
+		assert(coords.x <= resolution.w);
+		assert(coords.y <= resolution.h);
+		
 		return buffer[coords.y * resolution.w + coords.x];
 	}
 	
 	~FBWriter() {
-		stream.close();
+		if (filebuf.is_open())
+			filebuf.close();
 	}
 };
 
@@ -92,10 +112,15 @@ public:
 const uint32_t height 	= 1080;
 const uint32_t width	= 1920;
 
-int main() {
-	Resolution res = {width, height};
+int main() {	
+	FBWriter fb({width, height});
+	fb.open("/dev/fb0");
 	
-	FBWriter fb(res);
+	if (!fb.is_open()) {
+		std::cout << "Can't open\n";
+		return 1;
+	}
+	
 	/*
 	
 	for (int32_t x = 0; x < width; ++x)
