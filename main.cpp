@@ -31,29 +31,46 @@ struct RealCoords
 class CoordsCounter
 {
 private:
-/*
-	const double rangeX = 1;
-	const double rangeY = 1;
+	const float rangeX = 1;
+	const float rangeY = 1;
 	
-	const double lX;
-	const double lY;
-*/
-	const Resolution resolution;
+	const float lengthX;
+	const float lengthY;
+	
+	const uint16_t width;
+	const uint16_t height;
 public:
-	CoordsCounter(const Resolution& res) :
-		resolution(resolution) {
+	CoordsCounter(	const Resolution& res, 
+					float rangeX = 1, float rangeY = 1) :
+		width(res.w),
+		height(res.h),
+		rangeX(rangeX),
+		rangeY(rangeY),
+		lengthX(rangeX / res.w),
+		lengthY(rangeY / res.h)
+	{
 	}
 	
-	PixelCoords convert_c2p(const RealCoords& coords) {
-		return { std::lround(-0.5 + resolution.w / 2.0 * 
-												(coords.x + 1.0)),
-				 std::lround(-0.5 + resolution.h / 2.0 * 
-												(coords.y + 1.0)) };	
+	PixelCoords Real2Pixel(const RealCoords& coords) 
+	{
+		assert(fabsf(coords.x) <= rangeX);
+		assert(fabsf(coords.y) <= rangeY);
+		
+		float px = (coords.x + rangeX) * width  / (2 * rangeX);
+		float py = (coords.y + rangeY) * height / (2 * rangeY);
+		
+		return {std::lround(px), std::lround(py)};	
 	}
 	
-	RealCoords convert_p2c(const PixelCoords& coords) {
-		return { -1.0 + (2.0 * coords.x + 1.0) / resolution.w,
-				 -1.0 + (2.0 * coords.y + 1.0) / resolution.h };
+	RealCoords Pixel2Real(const PixelCoords& coords) 
+	{
+		assert(coords.x < width);
+		assert(coords.y < height);
+		
+		float rx = 2 * rangeX * coords.x / width  - rangeX;
+		float ry = 2 * rangeY * coords.y / height - rangeY;
+		
+		return {rx + lengthX, ry + lengthY};
 	}
 };
 
@@ -112,7 +129,24 @@ public:
 const uint32_t height 	= 1080;
 const uint32_t width	= 1920;
 
-int main() {	
+int main() {
+	CoordsCounter cc({width, height});
+	
+	while (1) {
+		uint16_t a, b;
+		std::cin >> a >> b;
+		RealCoords rc = cc.Pixel2Real({a, b});
+		std::cout << rc.x << " " << rc.y << std::endl;
+	}
+	
+	while (1) {
+		float a, b;
+		std::cin >> a >> b;
+		PixelCoords pc = cc.Real2Pixel({a, b});
+		std::cout << pc.x << " " << pc.y << std::endl;
+	}
+	
+	
 	FBWriter fb({width, height});
 	fb.open("/dev/fb0");
 	
