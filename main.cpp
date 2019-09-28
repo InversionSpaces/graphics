@@ -33,6 +33,13 @@ struct RealCoords
 	float x, y, z;
 };
 
+enum XYZ
+{
+	X_B,
+	Y_B,
+	Z_B
+};
+
 class CoordsCounter
 {
 private:
@@ -47,7 +54,7 @@ private:
 	const uint16_t width;
 	const uint16_t height;
 public:
-	CoordsCounter(	const Resolution& res, float fov = M_PI / 4,
+	CoordsCounter(	const Resolution& res, float distance = 1,
 					float rangeX = 1, float rangeY = 1) :
 		width(res.w),
 		height(res.h),
@@ -55,7 +62,7 @@ public:
 		rangeY(rangeY),
 		lengthX(rangeX / res.w),
 		lengthY(rangeY / res.h),
-		distance(rangeX / std::tan(fov))
+		distance(distance)
 	{
 	}
 	
@@ -92,6 +99,32 @@ public:
 		float ry = 2 * rangeY * coords.y / height - rangeY;
 		
 		return {rx + lengthX, ry + lengthY};
+	}
+	
+	RealCoords Rotate(	const RealCoords& coords, const float& angle, 
+						XYZ basis) const
+	{
+		float sin = std::sin(angle);
+		float cos = std::cos(angle);
+		
+		float x = coords.x;
+		float y = coords.y;
+		float z = coords.z;
+		
+		if (basis == X_B) {
+			y = cos * coords.y - sin * coords.z;
+			z = sin * coords.y + cos * coords.z;
+		}
+		else if (basis == Y_B) {
+			x = cos * coords.x + sin * coords.z;
+			z = cos * coords.z - sin * coords.x;
+		}
+		else if (basis == Z_B) {
+			x = cos * coords.x - sin * coords.y;
+			y = sin * coords.x + cos * coords.y;
+		}
+		
+		return {x, y, z};
 	}
 };
 
@@ -148,7 +181,12 @@ public:
 
 struct Line 
 {
-	RealCoords p1, p2;
+	RealCoords dots[2];
+};
+
+struct Cube
+{
+	RealCoords dots[8];
 };
 
 void Fill(FBWriter& fb, RGBAColor color) {
@@ -160,8 +198,8 @@ void Fill(FBWriter& fb, RGBAColor color) {
 void Draw(	FBWriter& fb, const CoordsCounter& cc, 
 			const Line& line, const RGBAColor& color)
 {	
-	PixelCoords start 	= cc.Real2Pixel(line.p1);
-	PixelCoords end 	= cc.Real2Pixel(line.p2);
+	PixelCoords start 	= cc.Real2Pixel(line.dots[0]);
+	PixelCoords end 	= cc.Real2Pixel(line.dots[1]);
 	
 	bool xORy = fabs(start.x - end.x) > fabs(start.y - end.y);
 	
@@ -206,7 +244,15 @@ void Draw(	FBWriter& fb, const CoordsCounter& cc,
 	}
 }
 
-
+void Draw(	FBWriter& fb, const CoordsCounter& cc, 
+			const Cube& cube, const RGBAColor& color)
+{		
+	for (int i = 0; i < 4; ++i) {
+		Draw(fb, cc, Line({{cube.dots[i], cube.dots[i + 4]}}), color);
+		Draw(fb, cc, Line({{cube.dots[i], cube.dots[(i + 1) % 4]}}), color);
+		Draw(fb, cc, Line({{cube.dots[i + 4], cube.dots[(i + 1) % 4 + 4]}}), color);
+	}
+}
 
 const uint32_t height 	= 1080;
 const uint32_t width	= 1920;
@@ -222,8 +268,35 @@ int main() {
 		return 1;
 	}
 	
+	float z = -2.5;
+	Cube cube = {{	{1, 1, 1}, {1, 1, -1}, {-1, 1, -1}, {-1, 1, 1}, 
+					{1, -1, 1}, {1, -1, -1}, {-1, -1, -1}, {-1, -1, 1}  }};
+					
+	while (1) {
+		for (float ang = 0; ang < 2 * M_PI; ang += 0.05) {
+			Fill(fb, {0, 0, 0, 0xff});
+			
+			Cube tmpcube = cube;
+			
+			for (int i = 0; i < 8; ++i) {
+				tmpcube.dots[i] = cc.Rotate(tmpcube.dots[i], ang, Y_B);
+				tmpcube.dots[i] = cc.Rotate(tmpcube.dots[i], ang, X_B);
+			}
+
+			for (int i = 0; i < 8; ++i)
+				tmpcube.dots[i].z += z;
+					
+			Draw(fb, cc, tmpcube, {0x55, 0x44, 0x33, 0xff});
+			
+			fb.flush();
+			
+			//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+	
+	/*
 	float halflen = 0.5;
-	float z = -10;
+	float z = -5;
 	
 	while (1) {
 		for (float i = 0; i < 2 * M_PI; i += 0.01) {
@@ -232,14 +305,15 @@ int main() {
 			float x = std::sin(i) * halflen;
 			float y = std::cos(i) * halflen;
 			
-			Draw(fb, cc, {{-x, -y, z}, {x, y, z}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{-x, y, z}, {x, -y, z}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{-x, -y, z}, {-x, y, z}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{x, y, z}, {x, -y, z}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{{-x, -y, z}, {x, y, z}}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{{-x, y, z}, {x, -y, z}}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{{-x, -y, z}, {-x, y, z}}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{{x, y, z}, {x, -y, z}}}, {0, 0xff, 0, 0xff});
 			
 			fb.flush();
 			
 			//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
+	*/
 }
