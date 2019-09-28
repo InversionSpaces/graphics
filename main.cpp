@@ -23,9 +23,14 @@ struct PixelCoords
 	uint16_t x, y;
 };
 
-struct RealCoords
+struct ScreenCoords
 {
 	float x, y;
+};
+
+struct RealCoords
+{
+	float x, y, z;
 };
 
 class CoordsCounter
@@ -37,21 +42,37 @@ private:
 	const float lengthX;
 	const float lengthY;
 	
+	const float distance;
+	
 	const uint16_t width;
 	const uint16_t height;
 public:
-	CoordsCounter(	const Resolution& res, 
+	CoordsCounter(	const Resolution& res, float fov = M_PI / 4,
 					float rangeX = 1, float rangeY = 1) :
 		width(res.w),
 		height(res.h),
 		rangeX(rangeX),
 		rangeY(rangeY),
 		lengthX(rangeX / res.w),
-		lengthY(rangeY / res.h)
+		lengthY(rangeY / res.h),
+		distance(rangeX / std::tan(fov))
 	{
 	}
 	
 	PixelCoords Real2Pixel(const RealCoords& coords) const
+	{
+		return Screen2Pixel(Real2Screen(coords));
+	}
+	
+	ScreenCoords Real2Screen(const RealCoords& coords) const
+	{
+		float x = distance * coords.x / -coords.z;
+		float y = distance * coords.y / -coords.z;
+		
+		return {x, y}; 
+	}
+	
+	PixelCoords Screen2Pixel(const ScreenCoords& coords) const
 	{
 		assert(fabsf(coords.x) <= rangeX);
 		assert(fabsf(coords.y) <= rangeY);
@@ -59,10 +80,10 @@ public:
 		float px = (coords.x + rangeX) * width  / (2 * rangeX);
 		float py = (coords.y + rangeY) * height / (2 * rangeY);
 		
-		return {std::lround(px), std::lround(py)};	
+		return {uint16_t(std::lround(px)), uint16_t(std::lround(py))};	
 	}
 	
-	RealCoords Pixel2Real(const PixelCoords& coords) const
+	ScreenCoords Pixel2Screen(const PixelCoords& coords) const
 	{
 		assert(coords.x < width);
 		assert(coords.y < height);
@@ -202,6 +223,7 @@ int main() {
 	}
 	
 	float halflen = 0.5;
+	float z = -10;
 	
 	while (1) {
 		for (float i = 0; i < 2 * M_PI; i += 0.01) {
@@ -210,10 +232,10 @@ int main() {
 			float x = std::sin(i) * halflen;
 			float y = std::cos(i) * halflen;
 			
-			Draw(fb, cc, {{-x, -y}, {x, y}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{-x, y}, {x, -y}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{-x, -y}, {-x, y}}, {0, 0xff, 0, 0xff});
-			Draw(fb, cc, {{x, y}, {x, -y}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{-x, -y, z}, {x, y, z}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{-x, y, z}, {x, -y, z}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{-x, -y, z}, {-x, y, z}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{x, y, z}, {x, -y, z}}, {0, 0xff, 0, 0xff});
 			
 			fb.flush();
 			
