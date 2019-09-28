@@ -77,10 +77,11 @@ public:
 class FBWriter
 {
 private:
-	const Resolution 		resolution;
 	std::vector<RGBAColor> 	buffer;
 	std::filebuf 			filebuf;
 public:
+	const Resolution 		resolution;
+
 	FBWriter(const Resolution& res) :
 		resolution(res),
 		buffer(res.h * res.w)
@@ -129,38 +130,58 @@ struct Line
 	RealCoords p1, p2;
 };
 
+void Fill(FBWriter& fb, RGBAColor color) {
+	for (uint16_t x = 0; x < fb.resolution.w; ++x)
+		for (uint16_t y = 0; y < fb.resolution.h; ++y)
+			fb[{x, y}] = color;
+}
+
 void Draw(	FBWriter& fb, const CoordsCounter& cc, 
 			const Line& line, const RGBAColor& color)
 {	
-	PixelCoords p1 = cc.Real2Pixel(line.p1);
-	PixelCoords p2 = cc.Real2Pixel(line.p2);
+	PixelCoords start 	= cc.Real2Pixel(line.p1);
+	PixelCoords end 	= cc.Real2Pixel(line.p2);
 	
-	uint16_t xmin = std::min(p1.x, p2.x);
-	uint16_t xmax = std::max(p1.x, p2.x);
-	 
-	uint16_t ymin = std::min(p1.y, p2.y);
-	uint16_t ymax = std::max(p1.y, p2.y);
+	bool xORy = fabs(start.x - end.x) > fabs(start.y - end.y);
 	
-	std::cout << xmin << " -> " << xmax << std::endl;
-	std::cout << ymin << " -> " << ymax << std::endl;
+	if (( xORy && (start.x > end.x)) ||
+		(!xORy && (start.y > end.y)))
+		std::swap(start, end);
+		
+	//std::cout << "Start: x[" << start.x << "] y[" << start.y << "]" << std::endl;
+	//std::cout << "End: x[" << end.x << "] y[" << end.y << "]" << std::endl;
 	
-	if (xmax - xmin > ymax - ymin) {
-		for (uint16_t x = xmin; x <= xmax; ++x) {
-			 uint16_t y = uint16_t(std::lround(
-							ymin + float(ymax - ymin) / 
-							float(xmax - xmin) * (x - xmin)
-							));
-			fb[{x, y}] = color;
-		}
+	uint16_t iterStart 	= 0;
+	uint16_t iterEnd 	= 0;
+	uint16_t initial	= 0;
+	
+	float tg = 0;
+	
+	if (xORy) {
+		initial 	= start.y;
+		
+		iterStart 	= start.x;
+		iterEnd 	= end.x;
+		
+		tg = float(end.y - start.y) / float(end.x - start.x);
 	}
 	else {
-		for (uint16_t y = ymin; y <= ymax; ++y) {
-			uint16_t x = uint16_t(std::lround(
-							xmin + float(xmax - xmin) / 
-							float(ymax - ymin) * (y - ymin)
-							));
-			fb[{x, y}] = color;
-		}
+		initial 	= start.x;
+		
+		iterStart 	= start.y;
+		iterEnd 	= end.y;
+		
+		tg = float(end.x - start.x) / float(end.y - start.y);
+	}
+	
+	//std::cout << "Initial: " << initial << std::endl;
+	//std::cout << "IterStart: " << iterStart << " IterEnd: " << iterEnd << std::endl;
+	//std::cout << "TG: " << tg << std::endl;
+	
+	for (uint16_t i = iterStart; i <= iterEnd; ++i) {
+		uint16_t j = initial + std::lround(tg * (i - iterStart));
+		//std::cout << i << " " << j << std::endl;
+		fb[xORy ? PixelCoords({i, j}) : PixelCoords({j, i})] = color;
 	}
 }
 
@@ -180,26 +201,23 @@ int main() {
 		return 1;
 	}
 	
-	Line line = {{0.9, 0.9}, {-0.9, -0.9}};
-	Draw(fb, cc, line, {0, 0xff, 0, 0xff});
+	float halflen = 0.5;
 	
-	fb.flush();
-	
-	/*
 	while (1) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		for (int x = 0; x < width; ++x)
-			for (int y = 0; y < height; y++)
-				fb[{x, y}] =  {x, y, 0, 0xff};
-				
-		fb.flush();
-		
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		for (int x = 0; x < width; ++x)
-			for (int y = 0; y < height; y++)
-				fb[{x, y}] =  {0, x, y, 0xff};
-				
-		fb.flush();
+		for (float i = 0; i < 2 * M_PI; i += 0.01) {
+			Fill(fb, {0, 0, 0, 0xff});
+			
+			float x = std::sin(i) * halflen;
+			float y = std::cos(i) * halflen;
+			
+			Draw(fb, cc, {{-x, -y}, {x, y}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{-x, y}, {x, -y}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{-x, -y}, {-x, y}}, {0, 0xff, 0, 0xff});
+			Draw(fb, cc, {{x, y}, {x, -y}}, {0, 0xff, 0, 0xff});
+			
+			fb.flush();
+			
+			//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
 	}
-	*/
 }
