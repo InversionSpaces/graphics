@@ -104,10 +104,7 @@ struct vec : public inner<T, n>
     
     T length2()
     {
-        T retval = data[0] * data[0];
-        for (int i = 1; i < n; ++i)
-            retval += data[i] * data[i];
-        return retval;
+        return (*this) * (*this);
     }
     
     float length()
@@ -137,7 +134,7 @@ T sarea(const vec<T, 2>& a, const vec<T, 2>& b)
 }
 
 template<typename T>
-vec<T, 3> dot(const vec<T, 3>& a, const vec<T, 3>& b)
+vec<T, 3> cross(const vec<T, 3>& a, const vec<T, 3>& b)
 {
     return {(a.y * b.z - b.y * a.z), 
             -(a.x * b.z - b.x * a.z), 
