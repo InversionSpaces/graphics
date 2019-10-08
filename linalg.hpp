@@ -15,6 +15,10 @@ struct inner<T, 2>
     union {
         struct
         {
+            T w, h;
+        };
+        struct
+        {
             T x, y;
         };
         T data[2];
@@ -49,7 +53,7 @@ struct inner<T, 4>
         {
             T r, g, b, a;
         };
-        T data[3];
+        T data[4];
     };
 };
 
