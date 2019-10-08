@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 #include <cassert>
+#include <cinttypes>
 
 extern "C"
 {
@@ -14,10 +15,6 @@ extern "C"
 
 #include "linalg.hpp"
 
-typedef vec<uint8_t, 4> bgracolor_t;
-typedef vec<uint16_t, 2> resolution_t;
-typedef vec<uint16_t, 2> pixelcoords_t;
-
 class XWindow
 {
 public:
@@ -26,8 +23,9 @@ public:
     XWindow(XWindow const &) = delete;
     XWindow(XWindow &&) = delete;
 
-    int width() const noexcept;
-    int height() const noexcept;
+    uint16_t width() const noexcept;
+    uint16_t height() const noexcept;
+    resolution_t resolution() const noexcept;
 
     void update() noexcept;
     void clear() noexcept;
@@ -41,18 +39,29 @@ private:
     GC      gc;
     XImage  *image;
     
-    resolution_t resolution;
+    resolution_t res;
     std::vector<bgracolor_t> pixels;
 };
 
-inline int      XWindow::width() const noexcept {return resolution.w;}
+inline resolution_t XWindow::resolution() const noexcept 
+{
+    return res;
+}
 
-inline int      XWindow::height() const noexcept {return resolution.h;}
+inline uint16_t XWindow::width() const noexcept 
+{
+    return res.w;
+}
+
+inline uint16_t XWindow::height() const noexcept 
+{
+    return res.h;
+}
 
 inline void     XWindow::clear() noexcept 
 {
     wchar_t* buffer = reinterpret_cast<wchar_t *>(pixels.data());
-    std::wmemset(buffer, 0xff000000, resolution.w * resolution.h);
+    std::wmemset(buffer, 0xff000000, res.w * res.h);
 }
 
 inline void     XWindow::update() noexcept 
@@ -67,17 +76,17 @@ inline void     XWindow::update() noexcept
         0, 
         0, 
         0, 
-        resolution.w, 
-        resolution.h
+        res.w, 
+        res.h
     );
 }
 
 bgracolor_t& XWindow::operator[](const pixelcoords_t& coords)
 {
-    assert(coords.x < resolution.w);
-    assert(coords.y < resolution.h);
+    assert(coords.x < res.w);
+    assert(coords.y < res.h);
     
-    return pixels[resolution.w * coords.y + coords.x];
+    return pixels[res.w * (res.h - coords.y - 1) + coords.x];
 }
 
 inline XWindow::XWindow()
@@ -117,10 +126,10 @@ inline XWindow::XWindow()
         1
     );
 
-    resolution.w = XWidthOfScreen (ScreenOfDisplay(display, screen));
-    resolution.h = XHeightOfScreen(ScreenOfDisplay(display, screen));
+    res.w = XWidthOfScreen (ScreenOfDisplay(display, screen));
+    res.h = XHeightOfScreen(ScreenOfDisplay(display, screen));
 
-    pixels.resize(resolution.w * resolution.h);
+    pixels.resize(res.w * res.h);
     pixels.shrink_to_fit();
 
     gc = XCreateGC(display, window, 0, 0);
@@ -140,16 +149,14 @@ inline XWindow::XWindow()
         ZPixmap,
         0,
         reinterpret_cast<char *>(pixels.data()),
-        resolution.w,
-        resolution.h,
+        res.w,
+        res.h,
         32,
         0
     );
     
     XClearWindow(display, window);
     XMapRaised(display, window);
-    
-    update();
 }
 
 inline XWindow::~XWindow()

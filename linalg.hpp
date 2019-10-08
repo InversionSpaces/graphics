@@ -35,7 +35,7 @@ struct inner<T, 3>
         };
         struct
         {
-            T r, g, b;
+            T b, g, r;
         };
         T data[3];
     };
@@ -51,7 +51,7 @@ struct inner<T, 4>
         };
         struct
         {
-            T r, g, b, a;
+            T b, g, r, a;
         };
         T data[4];
     };
@@ -170,6 +170,13 @@ vec<typename std::common_type<T, U>::type, n>
     
     return retval;
 }
+
+typedef vec<uint8_t, 4> bgracolor_t;
+typedef vec<uint16_t, 2> resolution_t;
+
+typedef vec<uint16_t, 2> pixelcoords_t;
+typedef vec<float, 2> screencoords_t;
+typedef vec<float, 3> realcoords_t;
 
 
 
