@@ -139,7 +139,7 @@ public:
     }
     
     ~Drawyer()
-    {
+    {	
         delete xw;
         delete cc;
     }

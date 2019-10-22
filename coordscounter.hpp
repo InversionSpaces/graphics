@@ -4,10 +4,7 @@
 
 class CoordsCounter
 {
-private:
-	const float rangeX;
-	const float rangeY;
-	
+private:	
 	const float lengthX;
 	const float lengthY;
 	
@@ -15,13 +12,10 @@ private:
 	
 	const resolution_t resolution;
 public:
-	CoordsCounter(	const resolution_t& res, float distance = 1,
-					float rangeX = 1, float rangeY = 1) :
+	CoordsCounter(const resolution_t& res, float distance = 1.f) :
 		resolution(res),
-		rangeX(rangeX),
-		rangeY(rangeY),
-		lengthX(rangeX / res.w),
-		lengthY(rangeY / res.h),
+		lengthX(1.f / res.w),
+		lengthY(1.f / res.h),
 		distance(distance)
 	{
 	}
@@ -33,23 +27,19 @@ public:
 	
 	screencoords_t real2screen(const realcoords_t& coords) const
 	{
-		float x =   rangeX 
-                    * distance / resolution.w 
-                    * coords.x / -coords.z;
-		float y =   rangeY 
-                    * distance / resolution.h 
-                    * coords.y / -coords.z;
+		float x = float(distance) * coords.x / resolution.w / -coords.z;
+		float y = float(distance) * coords.y / resolution.h / -coords.z;
 		
 		return {x, y}; 
 	}
 	
 	pixelcoords_t screen2pixel(const screencoords_t& coords) const
 	{
-		assert(fabsf(coords.x) <= rangeX);
-		assert(fabsf(coords.y) <= rangeY);
+		assert(fabsf(coords.x) <= 1.f);
+		assert(fabsf(coords.y) <= 1.f);
 		
-		float px = (coords.x + rangeX) * resolution.w / (2 * rangeX);
-		float py = (coords.y + rangeY) * resolution.h / (2 * rangeY);
+		float px = (coords.x + 1.f) * resolution.w / (2.f);
+		float py = (coords.y + 1.f) * resolution.h / (2.f);
 		
 		return {uint16_t(std::lround(px)), uint16_t(std::lround(py))};	
 	}
@@ -59,8 +49,8 @@ public:
 		assert(coords.x < resolution.w);
 		assert(coords.y < resolution.h);
 		
-		float rx = 2 * rangeX * coords.x / resolution.w - rangeX;
-		float ry = 2 * rangeY * coords.y / resolution.h - rangeY;
+		float rx = 2.f * coords.x / resolution.w - 1.f;
+		float ry = 2.f * coords.y / resolution.h - 1.f;
 		
 		return {rx + lengthX, ry + lengthY};
 	}

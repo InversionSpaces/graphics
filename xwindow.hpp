@@ -40,7 +40,7 @@ private:
     XImage  *image;
     
     resolution_t res;
-    std::vector<bgracolor_t> pixels;
+    bgracolor_t* pixels;
 };
 
 inline resolution_t XWindow::resolution() const noexcept 
@@ -60,7 +60,7 @@ inline uint16_t XWindow::height() const noexcept
 
 inline void     XWindow::clear() noexcept 
 {
-    wchar_t* buffer = reinterpret_cast<wchar_t *>(pixels.data());
+    wchar_t* buffer = reinterpret_cast<wchar_t *>(pixels);
     std::wmemset(buffer, 0xff000000, res.w * res.h);
 }
 
@@ -129,8 +129,9 @@ inline XWindow::XWindow()
     res.w = XWidthOfScreen (ScreenOfDisplay(display, screen));
     res.h = XHeightOfScreen(ScreenOfDisplay(display, screen));
 
-    pixels.resize(res.w * res.h);
-    pixels.shrink_to_fit();
+    pixels = reinterpret_cast<bgracolor_t*>(
+		calloc(res.w * res.h, sizeof(bgracolor_t))
+		);
 
     gc = XCreateGC(display, window, 0, 0);
 
@@ -148,7 +149,7 @@ inline XWindow::XWindow()
         DefaultDepth(display, screen),
         ZPixmap,
         0,
-        reinterpret_cast<char *>(pixels.data()),
+        reinterpret_cast<char*>(pixels),
         res.w,
         res.h,
         32,
