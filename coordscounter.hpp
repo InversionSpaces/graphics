@@ -35,8 +35,8 @@ public:
 	
 	pixelcoords_t screen2pixel(const screencoords_t& coords) const
 	{
-		assert(fabsf(coords.x) <= 1.f);
-		assert(fabsf(coords.y) <= 1.f);
+		assert(fabsf(coords.x) < 1.f);
+		assert(fabsf(coords.y) < 1.f);
 		
 		float px = (coords.x + 1.f) * resolution.w / (2.f);
 		float py = (coords.y + 1.f) * resolution.h / (2.f);

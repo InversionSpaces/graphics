@@ -30,7 +30,7 @@ public:
     void update() noexcept;
     void clear() noexcept;
     
-    bgracolor_t& operator[](const pixelcoords_t& coords);
+    bgracolor_t& operator[](const vec2i& coords);
 
 private:
     Display *display;
@@ -81,7 +81,7 @@ inline void     XWindow::update() noexcept
     );
 }
 
-bgracolor_t& XWindow::operator[](const pixelcoords_t& coords)
+bgracolor_t& XWindow::operator[](const vec2i& coords)
 {
     assert(coords.x < res.w);
     assert(coords.y < res.h);

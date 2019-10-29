@@ -65,7 +65,7 @@ struct vec : public inner<T, n>
     T& operator[](int i) { return data[i]; }
     const T& operator[](int i) const { return data[i]; }
     
-    vec<T, n> operator+(const vec<T, n> other)
+    inline vec<T, n> operator+(const vec<T, n>& other) const
     {
         vec<T, n> retval = *this;
         for (int i = 0; i < n; ++i)
@@ -73,7 +73,7 @@ struct vec : public inner<T, n>
         return retval;
     }
     
-    vec<T, n> operator-(const vec<T, n> other)
+    inline vec<T, n> operator-(const vec<T, n>& other) const
     {
         vec<T, n> retval = *this;
         for (int i = 0; i < n; ++i)
@@ -81,7 +81,7 @@ struct vec : public inner<T, n>
         return retval;
     }
     
-    T operator*(const vec<T, n> other)
+    inline T operator*(const vec<T, n>& other) const
     {
         T retval = data[0] * other[0];
         for (int i = 1; i < n; ++i)
@@ -90,7 +90,7 @@ struct vec : public inner<T, n>
     }
     
     template<typename S>
-    vec<T, n> operator*(const S& scalar)
+    inline vec<T, n> operator*(const S& scalar) const
     {
         vec<T, n> retval = *this;
         for (int i = 0; i < n; ++i)
@@ -99,46 +99,46 @@ struct vec : public inner<T, n>
     }
     
     template<typename S>
-    const vec<T, n>& operator*=(const S& scalar)
+    inline const vec<T, n>& operator*=(const S& scalar)
     {
         for (int i = 0; i < n; ++i)
             data[i] *= scalar;
         return *this;
     }
     
-    T length2()
+    inline T length2() const
     {
         return (*this) * (*this);
     }
     
-    float length()
+    inline float length() const
     {
         return std::sqrt(length2());
     }
     
-    vec<T, n> normalized()
+    inline vec<T, n> normalized() const
     {
         float l = length();
         
         assert(l > 0);
         
-        return (*this * (1 / l));
+        return (*this) * (1.f / l);
     }
     
-    void normalize()
+    inline void normalize()
     {
         *this = normalized();
     }
 };
 
 template<typename T>
-T sarea(const vec<T, 2>& a, const vec<T, 2>& b)
+inline T sarea(const vec<T, 2>& a, const vec<T, 2>& b)
 {
     return (a.x * b.y - a.y * b.x);
 }
 
 template<typename T>
-vec<T, 3> cross(const vec<T, 3>& a, const vec<T, 3>& b)
+inline vec<T, 3> cross(const vec<T, 3>& a, const vec<T, 3>& b)
 {
     return {(a.y * b.z - b.y * a.z), 
             -(a.x * b.z - b.x * a.z), 
@@ -150,12 +150,12 @@ struct sqmat
 {
     T data[n][n];
     
-    T* operator[] (int i) {return data[i];}
-    const T* operator[] (int i) const {return data[i];}
+    inline T* operator[] (int i) {return data[i];}
+    inline const T* operator[] (int i) const {return data[i];}
 };
 
 template<typename T, typename U, int n>
-vec<typename std::common_type<T, U>::type, n> 
+inline vec<typename std::common_type<T, U>::type, n> 
     operator*(const sqmat<U, n>& m, const vec<T, n>& v)
 {
     using C = typename std::common_type<T, U>::type;
@@ -171,12 +171,24 @@ vec<typename std::common_type<T, U>::type, n>
     return retval;
 }
 
+template<typename T, int n>
+inline vec<T, n> normalize(const vec<T, n>& val)
+{
+	return val.normalized();
+}
+
 typedef vec<uint8_t, 4> bgracolor_t;
 typedef vec<uint16_t, 2> resolution_t;
 
 typedef vec<uint16_t, 2> pixelcoords_t;
 typedef vec<float, 2> screencoords_t;
 typedef vec<float, 3> realcoords_t;
+
+typedef vec<float, 4> vec4f;
+typedef vec<float, 3> vec3f;
+typedef vec<float, 2> vec2f;
+
+typedef vec<int, 2> vec2i;
 
 
 
