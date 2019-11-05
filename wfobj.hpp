@@ -32,7 +32,12 @@ inline Mesh import_obj(char const *filename)
     std::string line;
     while(std::getline(in, line))
     {
+		//std::cout << pos.size() << " " << pos.capacity() << std::endl;
+		
         char const * const cstr = line.c_str();
+        
+        //std::cout << "here 1" << std::endl;
+        
         if(cstr[0] == 'v')
         {
             vec3f v;
@@ -66,6 +71,8 @@ inline Mesh import_obj(char const *filename)
             }
         }
     }
+    
+    //std::cout << "here 2" << std::endl;
     
     return out;
 }

@@ -177,6 +177,20 @@ inline vec<T, n> normalize(const vec<T, n>& val)
 	return val.normalized();
 }
 
+template<typename T>
+inline sqmat<T, 3> rotate(const vec<T, 3>& _dir, const vec<T, 3>& _up)
+{
+	//sqmat3f a = {{1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}};
+	
+	vec<T, 3> dir = _dir.normalized();
+	vec<T, 3> right = cross(_up, dir).normalized();
+	vec<T, 3> upper = cross(dir, right).normalized();
+	return {{	{upper.x, 	upper.y, 	upper.z},
+				{right.x, 	right.y, 	right.z},
+				{dir.x, 	dir.y, 		dir.z}
+			}};
+}
+
 typedef vec<uint8_t, 4> bgracolor_t;
 typedef vec<uint16_t, 2> resolution_t;
 
@@ -189,6 +203,8 @@ typedef vec<float, 3> vec3f;
 typedef vec<float, 2> vec2f;
 
 typedef vec<int, 2> vec2i;
+
+typedef sqmat<float, 3> sqmat3f;
 
 
 
