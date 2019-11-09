@@ -1,4 +1,4 @@
-FLAGS	:= -std=c++17 -ffast-math -Wall -Wextra -pedantic --sanitize=address
+FLAGS	:= -std=c++17 -ffast-math -Wall -Wextra -pedantic -O3
 LIBS	:= -lX11
 
 all:

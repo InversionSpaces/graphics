@@ -32,11 +32,7 @@ inline Mesh import_obj(char const *filename)
     std::string line;
     while(std::getline(in, line))
     {
-		//std::cout << pos.size() << " " << pos.capacity() << std::endl;
-		
         char const * const cstr = line.c_str();
-        
-        //std::cout << "here 1" << std::endl;
         
         if(cstr[0] == 'v')
         {
@@ -50,7 +46,7 @@ inline Mesh import_obj(char const *filename)
                 norm.push_back(v);
         }
         else if(cstr[0] == 'f')
-        {
+        {	
             Mesh::uint idx[3];
             auto const vsize = out.verts.size();
 
@@ -63,6 +59,9 @@ inline Mesh import_obj(char const *filename)
             }
 
             auto const vcount = out.verts.size() - vsize;
+            
+            if (!vcount) continue;
+            
             for(auto i = 1u; i < vcount - 1; i++)
             {
                 out.inds.push_back(vsize);

@@ -180,14 +180,13 @@ inline vec<T, n> normalize(const vec<T, n>& val)
 template<typename T>
 inline sqmat<T, 3> rotate(const vec<T, 3>& _dir, const vec<T, 3>& _up)
 {
-	//sqmat3f a = {{1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}};
-	
 	vec<T, 3> dir = _dir.normalized();
 	vec<T, 3> right = cross(_up, dir).normalized();
 	vec<T, 3> upper = cross(dir, right).normalized();
-	return {{	{upper.x, 	upper.y, 	upper.z},
-				{right.x, 	right.y, 	right.z},
-				{dir.x, 	dir.y, 		dir.z}
+	return {{	
+			{upper.x, 	upper.y, 	upper.z},
+			{right.x, 	right.y, 	right.z},
+			{dir.x, 	dir.y, 		dir.z}
 			}};
 }
 

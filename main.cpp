@@ -25,7 +25,7 @@ Mesh::vertex get_mixed(const Mesh::vertex vs[3], const float b, const float c)
 int main() {
 	Mesh mesh = import_obj("cat.obj");
 	
-	const vec3f move = {0.f, -1.f, -1.f};
+	const vec3f move = {-2.f, -3.f, -2.f};
 	const vec3f light = (vec3f{0.f, 0.f, 1.f}).normalized();
 	
 	XWindow xw;
@@ -39,14 +39,14 @@ int main() {
 	rast.set_view(0, 0, w, h);
 	
 	float const near = 0.5f;
-    float const far  = 15.f;
+    float const far  = 25.f;
     
     float const c1 = (far + near) / (far - near);
     float const c2 = 2.f * near * far / (far - near);
 		
 	vector<Rasterizer::rastout> rout;
 	
-	float phi = 0.f;
+	float phi = 1.57f;
 	float theta = 0.f;
 	
 	vector<float> depth;
@@ -54,8 +54,8 @@ int main() {
 	while (1) {
 		xw.clear();
 		
-		phi += 0.005;
-		theta += 0.005;
+		phi += 0.01;
+		theta += 0.01;
 		
 		depth.assign(w * h, 1.f); 
 		
@@ -65,9 +65,9 @@ int main() {
 			cos(theta) * cos(phi)
 		};
 		
-		const sqmat3f rotater = rotate(dir, {-1.f, 0.f, 0.f});
+		const sqmat3f rotater = rotate(dir, {0.f, 0.f, 1.f});
 		
-		const vec3f campos = dir * 2.f;
+		const vec3f campos = dir * 10.f;
 		
 		for (int i = 0; i < mesh.inds.size(); i += 3) {
 			Mesh::vertex vs[3] = {
@@ -101,11 +101,11 @@ int main() {
 				
 				Mesh::vertex vo = get_mixed(vs, o.b, o.c);
 				
-				const vec3f cat_color = {0.5f, 0.f, 1.f};
+				const vec3f lcolor = {0.5f, 0.2f, 1.f};
 				
 				const float nlight = max(0.f, light * (rotater * vo.norm));
 				
-				const vec3f color = cat_color * nlight;
+				const vec3f color = lcolor * nlight;
 				
 				xw[{o.x, o.y}] = { 	
 					static_cast<uint8_t>(color.x * 255u), 
