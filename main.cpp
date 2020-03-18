@@ -23,7 +23,7 @@ Mesh::vertex get_mixed(const Mesh::vertex vs[3], const float b, const float c)
 }
 
 int main() {
-	Mesh mesh = import_obj("cat.obj");
+	Mesh mesh = import_obj("air.obj");
 	
 	const vec3f move = {-2.f, -3.f, -2.f};
 	const vec3f light = (vec3f{0.f, 0.f, 1.f}).normalized();
